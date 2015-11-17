@@ -1,0 +1,11 @@
+# (C) 2015 Cybozu.  All rights reserved.
+
+ngx_addon_name="ngx_http_uuid4"
+
+CORE_INCS="$CORE_INCS $ngx_addon_dir"
+
+HTTP_MODULES="$HTTP_MODULES ngx_http_uuid4_module"
+
+NGX_ADDON_SRCS="$NGX_ADDON_SRCS $ngx_addon_dir/ngx_http_uuid4.c $ngx_addon_dir/mt19937/mt19937-64.c"
+
+# vim: ft=sh
