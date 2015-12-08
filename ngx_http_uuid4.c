@@ -6,7 +6,6 @@
 #include "mt19937/mt64.h"
 
 
-static ngx_int_t ngx_http_uuid4_init(ngx_conf_t *cf);
 static char *ngx_http_uuid4(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 
 
@@ -25,7 +24,7 @@ static ngx_command_t  ngx_http_uuid4_commands[] = {
 
 static ngx_http_module_t  ngx_http_uuid4_module_ctx = {
     NULL,                       /* preconfiguration */
-    ngx_http_uuid4_init,        /* postconfiguration */
+    NULL,                       /* postconfiguration */
 
     NULL,                       /* create main configuration */
     NULL,                       /* init main configuration */
@@ -54,11 +53,48 @@ ngx_module_t  ngx_http_uuid4_module = {
 };
 
 
+static int mt_initialized = 0;
+
+
+static ngx_int_t
+initialize_mt(ngx_http_request_t *r)
+{
+    static const size_t SEED_LENGTH = 312;
+    unsigned long long  seed[SEED_LENGTH];
+    size_t              n;
+    FILE               *f;
+
+    f = fopen("/dev/urandom", "r");
+    if (f == NULL) {
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                      "failed to open /dev/urandom");
+        return NGX_ERROR;
+    }
+    n = fread(seed, sizeof(unsigned long long), SEED_LENGTH, f);
+    if (n < SEED_LENGTH) {
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                      "failed to read /dev/urandom");
+        fclose(f);
+        return NGX_ERROR;
+    }
+    fclose(f);
+    init_by_array64(seed, SEED_LENGTH);
+
+    return NGX_OK;
+}
+
+
 static ngx_int_t
 ngx_http_uuid4_variable(ngx_http_request_t *r, ngx_http_variable_value_t *v,
     uintptr_t data)
 {
     static const size_t UUID_STR_LENGTH = 36;
+
+    if (!mt_initialized) {
+        if (initialize_mt(r) != NGX_OK)
+            return NGX_ERROR;
+        mt_initialized = 1;
+    }
 
     uint64_t upper = (uint64_t)genrand64_int64();
     uint64_t lower = (uint64_t)genrand64_int64();
@@ -114,32 +150,4 @@ ngx_http_uuid4(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     v->get_handler = ngx_http_uuid4_variable;
 
     return NGX_CONF_OK;
-}
-
-
-static ngx_int_t
-ngx_http_uuid4_init(ngx_conf_t *cf)
-{
-    static const size_t SEED_LENGTH = 312;
-    unsigned long long  seed[SEED_LENGTH];
-    size_t              n;
-
-    /* initialize MT */
-    FILE* f = fopen("/dev/urandom", "r");
-    if (f == NULL) {
-        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                           "failed to open /dev/urandom");
-        return NGX_ERROR;
-    }
-    n = fread(seed, sizeof(unsigned long long), SEED_LENGTH, f);
-    if (n < SEED_LENGTH) {
-        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                           "failed to read /dev/urandom");
-        fclose(f);
-        return NGX_ERROR;
-    }
-    fclose(f);
-    init_by_array64(seed, SEED_LENGTH);
-
-    return NGX_OK;
 }
