@@ -7,7 +7,7 @@ This module randomly generates UUID by Mersenne twister.
 You can use the UUID as an unique identifier for an HTTP request.
 
 NOTE: You should not treat these UUIDs as secret credentials because an attacker
-can predicate subsequent UUIDs by observing past UUIDs.
+can predict subsequent UUIDs by observing past UUIDs.
 
 
 Example configuration
@@ -34,7 +34,7 @@ Directives
 Syntax: `uuid4 VARIABLE`  
 Context: http, server, location
 
-Generates a version-4 UUID and sets it for the specified variable.
+Generates a version-4 UUID and assigns it to the specified variable.
 
 
 Install
