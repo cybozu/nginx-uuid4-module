@@ -50,6 +50,8 @@ make
 make install
 ```
 
+If you want to add this module as a dynamic module, specify `--add-dynamic-module=/path/to/nginx-uuid4-module` instead.
+
 
 License
 -------
